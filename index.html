@@ -87,12 +87,22 @@
         <h1 class="text-sm sm:text-base font-bold tracking-tight text-forest-900 dark:text-emerald-400 leading-none">
           Forks Over Knives
         </h1>
-        <p class="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Pixel Fold Companion • 100% WFPB</p>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Pixel Fold Companion • 100% WFPB</p>
+          <span class="text-[10px] text-stone-300 dark:text-stone-600">•</span>
+          <span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.2 rounded-md">Created by Matt Brenner</span>
+        </div>
       </div>
     </div>
 
     <!-- Quick Tools -->
     <div class="flex items-center gap-1.5">
+      <!-- Install / Setup Guide Button -->
+      <button onclick="toggleInstallModal(true)" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-forest-50 dark:bg-forest-900/40 text-forest-700 dark:text-emerald-300 border border-forest-200 dark:border-forest-800 flex items-center gap-1.5 pixel-press" title="How to Install">
+        <i class="fa-solid fa-download text-xs"></i>
+        <span class="hidden md:inline">Install</span>
+      </button>
+
       <!-- Pantry Roulette Trigger -->
       <button onclick="togglePantryDrawer()" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 flex items-center gap-1.5 pixel-press">
         <i class="fa-solid fa-kitchen-set"></i>
@@ -383,6 +393,56 @@
   <!-- TOAST FEEDBACK -->
   <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity pointer-events-none">
     Notice
+  </div>
+
+  <!-- HOW TO INSTALL MODAL FOR PIXEL FOLD -->
+  <div id="installModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-pixel-cardBgDark w-full max-w-md rounded-3xl border border-stone-200 dark:border-stone-800 shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-forest-700 text-white flex items-center justify-center text-xs">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-stone-900 dark:text-white">Install on Google Pixel Fold</h3>
+            <p class="text-[10px] text-stone-400">Add to Home Screen as a standalone App</p>
+          </div>
+        </div>
+        <button onclick="toggleInstallModal(false)" class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+        <div class="p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700/70">
+          <div class="font-bold text-forest-700 dark:text-emerald-400 mb-1 flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded-full bg-forest-700 text-white flex items-center justify-center text-[10px]">1</span>
+            Host on a Free HTTPS Web URL (Required by Chrome)
+          </div>
+          <p class="text-[11px] text-stone-500 dark:text-stone-400">
+            Android Chrome requires an <code class="bg-stone-200 dark:bg-stone-700 px-1 rounded">https://</code> URL for the <strong>"Install app"</strong> button to appear:
+          </p>
+          <ul class="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
+            <li>Upload this single <code class="font-mono">index.html</code> file to free drag-and-drop hosts like <strong>Netlify Drop</strong> (<span class="underline">app.netlify.com/drop</span>) or <strong>tiiny.host</strong>.</li>
+            <li>Alternatively, host via GitHub Pages or Firebase Hosting.</li>
+          </ul>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700/70">
+          <div class="font-bold text-forest-700 dark:text-emerald-400 mb-1 flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded-full bg-forest-700 text-white flex items-center justify-center text-[10px]">2</span>
+            Tap Install on Your Pixel Fold
+          </div>
+          <p class="text-[11px] text-stone-500 dark:text-stone-400">
+            Open your generated link on your Pixel Fold in Chrome. Tap Chrome's three dots (<i class="fa-solid fa-ellipsis-vertical"></i>) at the top-right &rarr; select <strong>"Install app"</strong> (or <strong>"Add to Home screen"</strong>).
+          </p>
+        </div>
+      </div>
+
+      <button onclick="toggleInstallModal(false)" class="w-full py-2.5 rounded-xl bg-forest-700 hover:bg-forest-800 text-white font-bold text-xs pixel-press">
+        Got it!
+      </button>
+    </div>
   </div>
 
   <!-- SCRIPT LOGIC -->
@@ -935,6 +995,16 @@
       triggerHaptic();
       const drawer = document.getElementById('pantryDrawer');
       drawer.classList.toggle('hidden');
+    }
+
+    function toggleInstallModal(show) {
+      triggerHaptic();
+      const modal = document.getElementById('installModal');
+      if (show) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
     }
 
     function togglePantryChip(id) {
