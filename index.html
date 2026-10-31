@@ -8,6 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Forks Over Knives WFPB Companion (Pixel Fold)</title>
 
+  <!-- PWA Manifest & Icons for Android Chrome / Pixel Fold -->
+  <link rel="manifest" id="pwaManifest">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%2315803d'/%3E%3Cpath fill='%23ffffff' d='M50 20 C35 20 25 35 25 50 C25 65 35 78 50 80 C48 70 52 60 60 52 C68 44 78 40 80 25 C65 25 55 20 50 20 Z'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%2315803d'/%3E%3Cpath fill='%23ffffff' d='M50 20 C35 20 25 35 25 50 C25 65 35 78 50 80 C48 70 52 60 60 52 C68 44 78 40 80 25 C65 25 55 20 50 20 Z'/%3E%3C/svg%3E">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -97,10 +102,16 @@
 
     <!-- Quick Tools -->
     <div class="flex items-center gap-1.5">
+      <!-- One-Tap Native Install Button (Appears when Chrome fires beforeinstallprompt) -->
+      <button id="nativeInstallBtn" onclick="triggerNativeInstall()" class="hidden px-2.5 py-1.5 text-xs font-bold rounded-xl bg-forest-700 text-white shadow-xs flex items-center gap-1.5 pixel-press animate-pulse">
+        <i class="fa-solid fa-download text-xs"></i>
+        <span>Install App</span>
+      </button>
+
       <!-- Install / Setup Guide Button -->
       <button onclick="toggleInstallModal(true)" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-forest-50 dark:bg-forest-900/40 text-forest-700 dark:text-emerald-300 border border-forest-200 dark:border-forest-800 flex items-center gap-1.5 pixel-press" title="How to Install">
-        <i class="fa-solid fa-download text-xs"></i>
-        <span class="hidden md:inline">Install</span>
+        <i class="fa-solid fa-circle-question text-xs"></i>
+        <span class="hidden md:inline">Help</span>
       </button>
 
       <!-- Pantry Roulette Trigger -->
@@ -910,8 +921,88 @@
     ];
     let dailyDozenLog = JSON.parse(localStorage.getItem('fok_dozen_log')) || {};
 
+    // --- PWA Installation & Service Worker Bridge ---
+    let deferredInstallPrompt = null;
+
+    function setupPWA() {
+      // 1. Generate compliant Web App Manifest with SVG icons
+      const svgIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%2315803d'/%3E%3Cpath fill='%23ffffff' d='M96 35 C68 35 48 64 48 93 C48 122 68 147 96 151 C92 132 100 113 115 98 C130 83 149 76 153 47 C124 47 106 35 96 35 Z'/%3E%3C/svg%3E";
+      const manifestObject = {
+        name: "Forks Over Knives Companion",
+        short_name: "FOK Recipes",
+        description: "100% Whole Food Plant-Based Recipes & Planner for Google Pixel Fold",
+        start_url: window.location.href,
+        id: window.location.pathname,
+        display: "standalone",
+        orientation: "any",
+        background_color: "#121413",
+        theme_color: "#163f28",
+        icons: [
+          { src: svgIcon, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+          { src: svgIcon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifestObject)], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      document.getElementById('pwaManifest').setAttribute('href', manifestUrl);
+
+      // 2. Register Service Worker with active fetch handler (Required by Android Chrome PWA Engine)
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          const CACHE_NAME = 'fok-pwa-cache-v1';
+          self.addEventListener('install', (e) => {
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', (e) => {
+            e.waitUntil(clients.claim());
+          });
+          self.addEventListener('fetch', (e) => {
+            e.respondWith(
+              fetch(e.request).catch(() => caches.match(e.request))
+            );
+          });
+        `;
+        const swBlob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl)
+          .then(() => console.log('PWA Service Worker successfully registered'))
+          .catch(err => console.debug('ServiceWorker notice:', err));
+      }
+
+      // 3. Capture native Android beforeinstallprompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        const btn = document.getElementById('nativeInstallBtn');
+        if (btn) btn.classList.remove('hidden');
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        const btn = document.getElementById('nativeInstallBtn');
+        if (btn) btn.classList.add('hidden');
+        showToast("App installed to your Pixel Fold!");
+      });
+    }
+
+    function triggerNativeInstall() {
+      triggerHaptic(30);
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            showToast("Installing app...");
+          }
+          deferredInstallPrompt = null;
+        });
+      } else {
+        toggleInstallModal(true);
+      }
+    }
+
     // --- Init Function ---
     window.onload = function() {
+      setupPWA();
       initTheme();
       initPantryChips();
       renderRecipes();
